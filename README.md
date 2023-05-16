@@ -1,2 +1,2 @@
 # drater
-A web app to show Stock Analyst Rating of US top TECH using simple linear algebra
+A simple web to show Stock Analyst Rating of US TECH-company using simple linear algebra
