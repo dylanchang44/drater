@@ -1,0 +1,16 @@
+---
+OVERVIEW:
+- PERatio
+- PEGRatio
+INCOME_STATEMENT:
+- totalRevenue
+- grossProfit
+- netIncome
+BALANCE_SHEET:
+- totalShareholderEquity
+- retainedEarnings
+CASH_FLOW:
+- capitalExpenditures
+- dividendPayout
+- operatingCashflow
+- cashflowFromFinancing
