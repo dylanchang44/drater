@@ -3,6 +3,7 @@ use serde_json::Value;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use reqwest::Client;
+use std::error::Error;
 
 #[derive(Debug, Deserialize)]
 pub struct Source {
@@ -20,7 +21,8 @@ pub struct DataMap {
 #[derive(Debug, Deserialize)]
 pub struct Drater {
     pub source:Source,
-    pub datamap:DataMap
+    //key to store company name, value to store all relevant data
+    pub company_data:HashMap<String, DataMap>
 }
 
 impl Drater{
@@ -31,28 +33,28 @@ impl Drater{
                 stock: Vec::new(),
                 data: HashMap::new(),
             },
-            datamap: DataMap {
-                value: HashMap::new(),
-                result: HashMap::new(),
-            }
+            company_data:HashMap::new()
         }
     }
 
     pub async fn fetch_data(&mut self, api_key: &str)->Result<(), Box<dyn std::error::Error>>{
-        //will be remove after stock loop complete
-        let symbol = "AAPL"; // APPLE company symbol
-        // Create a mutable reference to self.source.data
-        let data_ref = &mut self.source.data; 
+        //loop company
+        for company in self.source.stock.clone(){
+            let symbol=&company[0].clone();
+            // Create a mutable reference to self.source.data
+            let data_ref = &mut self.source.data; 
 
-        for category in data_ref.keys().cloned().collect::<Vec<_>>(){
-            let client = Client::new();
-            let endpoint: String = format!("https://www.alphavantage.co/query?function={}&symbol={}&apikey={}",category,symbol, api_key);
+            for category in data_ref.keys().cloned().collect::<Vec<_>>(){
+                let client = Client::new();
+                print!("{}",*symbol);
+                let endpoint: String = format!("https://www.alphavantage.co/query?function={}&symbol={}&apikey={}",category,*symbol, api_key);
 
             match client.get(&endpoint).send().await {
                 Ok(response) => {
                     if response.status().is_success() {
                         let fetch_result = response.text().await.unwrap();
-                        self.parse_fetched_data(&fetch_result, category);
+                        self.parse_fetched_data(symbol.clone(), category, &fetch_result);
+                        //self.convert_company_data(symbol.clone()).unwrap();
                     } else {
                         return Err(format!("Unsuccessful response. Status code: {}", response.status()).into());
                     }
@@ -61,38 +63,53 @@ impl Drater{
                 //html_content.push_str(format!("Failed to fetch values. Error: {}", err)),
             }
         }
-        Ok(())
+        }
+        Ok(()) 
     }
     
-    fn parse_fetched_data(&mut self, json: &str, key: String){
+    fn parse_fetched_data(&mut self, symbol: String ,keyword: String, json: &str){
         //grap data
         let json: serde_json::Value = serde_json::from_str(json).unwrap();
         //extract data
-        let target_vec: Option<&Value> = if key == "OVERVIEW" {
+        let target_vec: Option<&Value> = if keyword == "OVERVIEW" {
             Some(&json)
         } else {
             Some(&json["quarterlyReports"][0])
         };
 
-        for item in self.source.data[&key].iter().cloned().collect::<Vec<_>>() {
-            self.get_value_as_f32(target_vec.unwrap(),&item)
+        for item in self.source.data[&keyword].iter().cloned().collect::<Vec<_>>() {
+            let _= self.get_value_for_company(target_vec.unwrap(), &symbol,&item);
         }
     }
     
-    fn get_value_as_f32(&mut self, json: &serde_json::Value, key: &str){
-        self.datamap.value.insert(key.to_owned(), json[key].as_str().unwrap_or("-1").parse().unwrap());
+    fn get_value_for_company(&mut self, json: &serde_json::Value, symbol: &String, keyword: &str)->Result<(),Box<dyn std::error::Error>>{
+        //debug
+        if let Some(datamap)=self.company_data.get_mut(symbol){
+            datamap.value.insert(keyword.to_owned(), json[keyword].as_str().unwrap_or("-1").parse().unwrap());
+        }else{
+            let error_message = format!("Can't get datamap of company_data at mutable for {}", symbol);
+            return Err(Box::<dyn Error>::from(error_message));
+        }
+        Ok(())
     }
 
-    pub fn convert_data(&mut self){
-        let source_map=self.datamap.value.clone();
-        self.datamap.result.insert("gross_margin".to_owned(), 100.0 * (source_map["grossProfit"]/source_map["totalRevenue"]));
-        self.datamap.result.insert("net_margin".to_owned(), 100.0 * (source_map["netIncome"]/source_map["totalRevenue"]));
-        self.datamap.result.insert("retained_earning".to_owned(), 100.0 * (source_map["retainedEarnings"]/source_map["totalShareholderEquity"]));
-        self.datamap.result.insert("total_equity".to_owned(), 100.0 * (source_map["totalShareholderEquity"]/source_map["netIncome"]));
-        self.datamap.result.insert("capital_expenditure".to_owned(), 100.0 * (source_map["capitalExpenditures"]/source_map["netIncome"]));
-        self.datamap.result.insert("dividend_paid".to_owned(), 100.0 * (source_map["dividendPayout"]/source_map["operatingCashflow"]));
-        self.datamap.result.insert("cash_finance".to_owned(), 100.0 * (source_map["cashflowFromFinancing"]/source_map["operatingCashflow"]));
-        self.datamap.result.insert("PERatio".to_owned(), (source_map["PERatio"]));
-        self.datamap.result.insert("PEGRatio".to_owned(), (source_map["PEGRatio"]));
+    fn convert_company_data(&mut self, symbol: String)->Result<(),Box<dyn std::error::Error>>{
+        let source_map=self.company_data[&symbol].value.clone();
+
+        if let Some(datamap)=self.company_data.get_mut(&symbol){
+            datamap.result.insert("gross_margin".to_owned(), 100.0 * (source_map["grossProfit"]/source_map["totalRevenue"]));
+            datamap.result.insert("net_margin".to_owned(), 100.0 * (source_map["netIncome"]/source_map["totalRevenue"]));
+            datamap.result.insert("retained_earning".to_owned(), 100.0 * (source_map["retainedEarnings"]/source_map["totalShareholderEquity"]));
+            datamap.result.insert("total_equity".to_owned(), 100.0 * (source_map["totalShareholderEquity"]/source_map["netIncome"]));
+            datamap.result.insert("capital_expenditure".to_owned(), 100.0 * (source_map["capitalExpenditures"]/source_map["netIncome"]));
+            datamap.result.insert("dividend_paid".to_owned(), 100.0 * (source_map["dividendPayout"]/source_map["operatingCashflow"]));
+            datamap.result.insert("cash_finance".to_owned(), 100.0 * (source_map["cashflowFromFinancing"]/source_map["operatingCashflow"]));
+            datamap.result.insert("PERatio".to_owned(), source_map["PERatio"]);
+            datamap.result.insert("PEGRatio".to_owned(), source_map["PEGRatio"]);
+        }else{
+            let error_message = format!("Can't get datamap of company_data at mutable for {}", symbol);
+            return Err(Box::<dyn Error>::from(error_message));
+        }
+        Ok(())
     }
 }
