@@ -1,9 +1,7 @@
 
-use serde_json::Value;
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, clone};
+use serde::{Deserialize};
+use std::{collections::HashMap};
 use reqwest::Client;
-use std::error::Error;
 
 #[derive(Debug, Deserialize)]
 pub struct Source {
@@ -131,7 +129,7 @@ impl Drater{
         for it in 0..9{
             rating += n_map[it]*weight_vec[it];
         }
-        rating=1.0+rating/25.0;
+        rating=5.0 - rating/25.0;
         rating
     }
 }

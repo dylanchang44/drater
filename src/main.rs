@@ -2,11 +2,9 @@ mod fetch;
 use reqwest::Client;
 use axum::{
     routing::get,
-    http::{Response, StatusCode},
     response::Html,
     Router,
 };
-use std::collections::HashMap;
 use serde_yaml::{self};
 use fetch::Drater;
 
@@ -32,7 +30,7 @@ async fn launch() -> Html<String> {
     //load to drater-source
     drater.source.data = serde_yaml::from_str(&data_list).expect("Failed to parse YAML");
     //grap index result from http endpoint
-    let symbol="QCOM";
+    let symbol="PYPL";
     drater.fetch_data(api_key,symbol).await.unwrap();
     let rating=drater.rating_calc();
 
