@@ -1,5 +1,4 @@
 mod fetch;
-use std::fs;
 use reqwest::Client;
 use axum::{
     routing::get,
@@ -38,9 +37,6 @@ async fn launch() -> Html<String> {
 // Generate HTML content to display the values
 let mut html_content = String::new();
 html_content.push_str(&format!("{} rating: {:.2}<br>", symbol, rating));
-
-fs::write("../index.html", &html_content).expect("Failed to write index.html");
-
 //Test API
 /* 
 let endpoint: String = format!("https://www.alphavantage.co/query?function={}&symbol={}&apikey={}","CASH_FLOW","TSLA", api_key);
