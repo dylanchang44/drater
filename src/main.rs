@@ -39,7 +39,7 @@ async fn launch() -> Html<String> {
 let mut html_content = String::new();
 html_content.push_str(&format!("{} rating: {:.2}<br>", symbol, rating));
 
-fs::write("../index.html", &html_content).expect("Failed to write index.html");
+fs::write("./index.html", &html_content).expect("Failed to write index.html");
 
 //Test API
 /* 
