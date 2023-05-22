@@ -1,5 +1,5 @@
 mod fetch;
-
+use reqwest::Client;
 use axum::{
     routing::get,
     http::{Response, StatusCode},
@@ -23,33 +23,49 @@ async fn main() {
 }
 
 async fn launch() -> Html<String> {
+    //my standard API key of Alpha Vantage
     let api_key = "IUWE71WEWZMLHPJK";
-    let stock_list = std::fs::read_to_string("stock.yaml").expect("Failed to read file");
+    //let stock_list = std::fs::read_to_string("stock.yaml").expect("Failed to read file");
     let data_list= std::fs::read_to_string("data.yaml").expect("Failed to read file");
 
     let mut drater=Drater::new();
     //load to drater-source
-    drater.source.stock = serde_yaml::from_str(&stock_list).expect("Failed to parse YAML");
     drater.source.data = serde_yaml::from_str(&data_list).expect("Failed to parse YAML");
     //grap index result from http endpoint
-    drater.fetch_data(api_key).await.unwrap();
-    //calculate rating
-    //let rating:HashMap<String, f32>= HashMap::new();
-    //manifest
+    let symbol="QCOM";
+    drater.fetch_data(api_key,symbol).await.unwrap();
+    let rating=drater.rating_calc();
 
 // Generate HTML content to display the values
 let mut html_content = String::new();
+html_content.push_str(&format!("{} rating: {:.2}<br>", symbol, rating));
+//Test API
+/* 
+let endpoint: String = format!("https://www.alphavantage.co/query?function={}&symbol={}&apikey={}","CASH_FLOW","TSLA", api_key);
+    let client = Client::new();
+    match client.get(&endpoint).send().await {
+        Ok(response) => {
+            if response.status().is_success() {
+                let fetch_result = response.text().await.unwrap();
+                html_content.push_str(&fetch_result);
+                //self.convert_company_data(symbol.clone()).unwrap();
+            } else {
+                println!("{}", format!("Unsuccessful response. Status code: {}", response.status()));
+            }
+        }
+        Err(err) => println!("{}", format!("Failed to fetch values. Error: {}", err))
+    }
+*/
 
 //print result map
-//let limit=5;
-                // for (k, v) in drater.company_data {
-                //     html_content.push_str(&format!("{}: {:?}<br>", k, v.value));
+                // for (k, v) in drater.company_data.value {
+                //     html_content.push_str(&format!("{}: {}<br>", k, v));
                 // }
 
                 //html_content.push_str(&format!("hashmap size: {}",drater.company_data.len()));
 //print data list
-                // for (key, value) in drater.source.data {
-                //     html_content.push_str(&format!("{}: {:?}<br>", key, value));
+                // for (k, v) in drater.company_data.normalized_result {
+                //     html_content.push_str(&format!("{}: {:?}<br>", k, v));
                 // }
 
     Html(html_content)
