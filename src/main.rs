@@ -22,7 +22,7 @@ async fn main() {
 
 async fn launch() -> Html<String> {
     //standard API key of Alpha Vantage
-    let api_key = "Your Alpha Vantage API key";
+    let api_key = "Your_Alpha_Vantage_API_key";
     //let stock_list = std::fs::read_to_string("stock.yaml").expect("Failed to read file");
     let data_list= std::fs::read_to_string("data.yaml").expect("Failed to read file");
 
