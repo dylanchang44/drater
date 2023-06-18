@@ -1,5 +1,5 @@
 # drater
-<h4 align="center">Simple web to calculate Stock Analyst Rating of a company using simple linear algebra, based on rust axum web framework</h4>
+<h5 align="center">Simple web to calculate Stock Analyst Rating of a company using simple linear algebra, based on rust axum web framework</h5>
 
 ## Weight
 After a score(out of 100) is calculated for fundamental data of the company.
